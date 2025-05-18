@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestion des Réservations{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2575fc;
+            --primary-dark: #1c60d2;
+            --secondary-color: #6a11cb;
+            --success-color: #4caf50;
+            --danger-color: #f44336;
+            --light-color: #f8f9fa;
+            --dark-color: #333;
+            --gray-color: #777;
+            --border-radius: 12px;
+            --box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(120deg, #f5f7fa 0%, #e3dfff 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 600;
+        }
+
+        nav {
+            background-color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        nav a {
+            color: var(--dark-color);
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            font-weight: 500;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        nav a:hover {
+            background-color: rgba(37, 117, 252, 0.1);
+            color: var(--primary-color);
+        }
+
+        nav a.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .container {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .content {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 60px;
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        footer {
+            background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
+            color: white;
+            text-align: center;
+            padding: 20px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* Boutons communs */
+        .btn {
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-size: 15px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            box-shadow: 0 5px 15px rgba(37, 117, 252, 0.2);
+        }
+
+        .btn-secondary {
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e9ecef;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes scaleIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<header>
+    <h1>Gestion des Réservations</h1>
+</header>
+
+
+<nav>
+    <a href="{% url 'appointments:home' %}"> class="{% if request.path == '/' %}active{% endif %}">
+        <i class="fas fa-home"></i> Accueil
+    </a>
+    <a href="{% url 'appointments:booking' %}" class="{% if 'booking' in request.path %}active{% endif %}">
+        <i class="fas fa-calendar-plus"></i> Réserver
+    </a>
+    <a href="/admin/" class="{% if 'admin' in request.path %}active{% endif %}">
+        <i class="fas fa-user-shield"></i> Administration
+    </a>
+    {% if user.is_authenticated %}
+        <a href="{% url 'logout' %}">
+            <i class="fas fa-sign-out-alt"></i> Déconnexion
+        </a>
+    {% else %}
+        <a href="{% url 'appointments:login' %}">
+            <i class="fas fa-sign-in-alt"></i> Connexion
+        </a>
+    {% endif %}
+</nav>
+
+<div class="container">
+    <div class="content">
+        {% block content %}
+        <!-- Le contenu de chaque page sera inséré ici -->
+        {% endblock %}
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2025 Système de Réservation. Tous droits réservés.</p>
+</footer>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

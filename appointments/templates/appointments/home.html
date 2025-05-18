@@ -1,0 +1,99 @@
+{% extends 'appointments/base.html' %}
+{% block content %}
+<style>
+    .hero {
+        text-align: center;
+        padding: 60px 20px;
+        background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
+        color: white;
+        border-radius: var(--border-radius);
+        margin-bottom: 30px;
+    }
+
+    .hero h1 {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+        max-width: 700px;
+        margin: 0 auto 25px;
+    }
+
+    .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+        margin-top: 40px;
+    }
+
+    .feature-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 30px;
+        box-shadow: var(--box-shadow);
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-card h3 {
+        color: var(--primary-color);
+        margin-bottom: 15px;
+    }
+
+    .actions {
+        margin-top: 30px;
+    }
+
+    .actions a {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 12px 25px;
+        background-color: white;
+        color: var(--primary-color);
+        border-radius: 30px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .actions a:hover {
+        background-color: rgba(255, 255, 255, 0.9);
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="hero">
+    <h1>Bienvenue sur notre plateforme</h1>
+    <p>Réservez vos rendez-vous facilement, rapidement et en toute sécurité.</p>
+    <div class="actions">
+        <a href="{% url 'appointments:booking' %}" class="btn-primary">
+            <i class="fas fa-calendar-plus"></i> Réserver un rendez-vous
+        </a>
+        {% if not user.is_authenticated %}
+        <a href="{% url 'appointments:login' %}" class="btn-secondary">
+            <i class="fas fa-sign-in-alt"></i> Connexion
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="features">
+    <div class="feature-card">
+        <h3><i class="fas fa-magic"></i> Interface intuitive</h3>
+        <p>Une expérience utilisateur claire et fluide pour vos réservations.</p>
+    </div>
+    <div class="feature-card">
+        <h3><i class="fas fa-lock"></i> Sécurité des données</h3>
+        <p>Vos informations sont stockées en toute sécurité dans notre base de données.</p>
+    </div>
+    <div class="feature-card">
+        <h3><i class="fas fa-headset"></i> Support rapide</h3>
+        <p>Notre équipe est disponible pour répondre à toutes vos questions.</p>
+    </div>
+</div>
+{% endblock %}

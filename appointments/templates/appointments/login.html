@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 450px;
+        margin: 40px auto;
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 40px;
+        animation: fadeIn 0.6s ease;
+    }
+
+    .auth-container h2 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: var(--dark-color);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #555;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: var(--transition);
+    }
+
+    .form-group input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.1);
+        outline: none;
+    }
+
+    .auth-footer {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .auth-footer a {
+        color: var(--primary-color);
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="auth-container">
+    <h2><i class="fas fa-sign-in-alt"></i> Connexion</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="username">Nom d'utilisateur</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+            <i class="fas fa-unlock-alt"></i> Se connecter
+        </button>
+        <div class="auth-footer">
+            Pas encore inscrit ? <a href="{% url 'register' %}">Créer un compte</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

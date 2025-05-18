@@ -1,0 +1,1111 @@
+{% extends 'appointments/base.html' %}
+{% load static %}
+
+{% block title %}Réserver un rendez-vous{% endblock %}
+
+{% block extra_head %}
+<!-- Flatpickr pour le calendrier -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* Styles personnalisés */
+    .booking-section {
+        background: linear-gradient(120deg, #6a11cb 0%, #2575fc 100%);
+        padding: 50px 0;
+        position: relative;
+        min-height: 85vh;
+    }
+    
+    .booking-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('{% static "images/booking-bg.jpg" %}') no-repeat center center;
+        background-size: cover;
+        opacity: 0.1;
+        z-index: 0;
+    }
+    
+    .booking-container {
+        background-color: #fff;
+        border-radius: 15px;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        position: relative;
+        z-index: 1;
+        max-width: 850px;
+        margin: 0 auto;
+        overflow: hidden;
+        animation: fadeIn 0.6s ease-in;
+    }
+    
+    .booking-header {
+        background-color: #f8f9fa;
+        padding: 20px 30px;
+        border-bottom: 1px solid #eaeaea;
+    }
+    
+    .booking-header h2 {
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .booking-header p {
+        color: #777;
+        font-size: 14px;
+    }
+    
+    .booking-steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin: 25px 0;
+        padding: 0 40px;
+    }
+    
+    .step {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        flex: 1;
+    }
+    
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e0e0e0;
+        color: #666;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 8px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .step.active .step-circle {
+        background: #2575fc;
+        color: white;
+        box-shadow: 0 5px 15px rgba(37, 117, 252, 0.3);
+    }
+    
+    .step.completed .step-circle {
+        background: #4caf50;
+        color: white;
+    }
+    
+    .step.completed .step-circle::after {
+        content: '\f00c';
+        font-family: 'Font Awesome 5 Free';
+        font-weight: 900;
+    }
+    
+    .step-label {
+        font-size: 14px;
+        color: #999;
+        font-weight: 500;
+    }
+    
+    .step.active .step-label {
+        color: #2575fc;
+        font-weight: 600;
+    }
+    
+    .step.completed .step-label {
+        color: #4caf50;
+    }
+    
+    .step-connector {
+        position: absolute;
+        top: 20px;
+        left: 70px;
+        right: 70px;
+        height: 3px;
+        background: #e0e0e0;
+        z-index: 0;
+    }
+    
+    .step-connector-progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background: #2575fc;
+        transition: width 0.3s ease;
+    }
+    
+    .booking-body {
+        padding: 30px;
+    }
+    
+    .step-content {
+        padding: 15px 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #444;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #2575fc;
+        box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.1);
+        outline: none;
+    }
+    
+    .form-control.error {
+        border-color: #f44336;
+    }
+    
+    .required-field::after {
+        content: ' *';
+        color: #f44336;
+    }
+    
+    .time-slots {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 12px;
+        margin-top: 15px;
+    }
+    
+    .time-slot-btn {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .time-slot-btn:hover {
+        border-color: #2575fc;
+        background-color: #f5f9ff;
+    }
+    
+    .time-slot-btn.active {
+        background: #2575fc;
+        color: white;
+        border-color: #2575fc;
+        box-shadow: 0 3px 10px rgba(37, 117, 252, 0.2);
+    }
+    
+    .time-slot-btn.unavailable {
+        background-color: #f5f5f5;
+        color: #aaa;
+        cursor: not-allowed;
+        border-color: #eee;
+    }
+    
+    .btn {
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background-color: #2575fc;
+        color: white;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #1c60d2;
+        box-shadow: 0 5px 15px rgba(37, 117, 252, 0.2);
+    }
+    
+    .btn-secondary {
+        background-color: #f8f9fa;
+        color: #333;
+        border: 1px solid #ddd;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e9ecef;
+    }
+    
+    .btn-success {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+    }
+    
+    .btn-success:hover {
+        background-color: #43a047;
+        box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+    }
+    
+    .confirmation-details {
+        border-left: 4px solid #2575fc;
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    
+    .detail-row {
+        margin-bottom: 12px;
+    }
+    
+    .detail-label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 3px;
+    }
+    
+    .detail-value {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .highlight {
+        color: #2575fc;
+        font-weight: 600;
+    }
+    
+    .flatpickr-calendar {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .flatpickr-day.selected,
+    .flatpickr-day.selected:focus,
+    .flatpickr-day.selected:hover {
+        background: #2575fc;
+        border-color: #2575fc;
+    }
+    
+    .flatpickr-day.today {
+        border-color: #2575fc;
+    }
+    
+    .booking-footer {
+        display: flex;
+        justify-content: space-between;
+        padding: 20px 30px;
+        border-top: 1px solid #eaeaea;
+        background-color: #f8f9fa;
+    }
+    
+    .field-info {
+        font-size: 13px;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .success-animation {
+        text-align: center;
+        padding: 40px 0;
+    }
+    
+    .success-icon {
+        font-size: 80px;
+        color: #4caf50;
+        margin-bottom: 20px;
+        animation: scaleIn 0.5s ease;
+    }
+    
+    @keyframes scaleIn {
+        0% {
+            transform: scale(0);
+            opacity: 0;
+        }
+        70% {
+            transform: scale(1.2);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .booking-steps {
+            padding: 0 20px;
+        }
+        
+        .step-circle {
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+        }
+        
+        .step-label {
+            font-size: 12px;
+        }
+        
+        .step-connector {
+            left: 50px;
+            right: 50px;
+        }
+        
+        .booking-body {
+            padding: 20px;
+        }
+        
+        .time-slots {
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        }
+    }
+    
+    /* Animation d'attente */
+    .loading {
+        display: inline-block;
+        position: relative;
+        width: 80px;
+        height: 80px;
+        margin: 40px auto;
+    }
+    
+    .loading div {
+        position: absolute;
+        border: 4px solid #2575fc;
+        opacity: 1;
+        border-radius: 50%;
+        animation: loading 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    }
+    
+    .loading div:nth-child(2) {
+        animation-delay: -0.5s;
+    }
+    
+    @keyframes loading {
+        0% {
+            top: 36px;
+            left: 36px;
+            width: 0;
+            height: 0;
+            opacity: 1;
+        }
+        100% {
+            top: 0px;
+            left: 0px;
+            width: 72px;
+            height: 72px;
+            opacity: 0;
+        }
+    }
+    
+    /* Ajout pour cacher les éléments */
+    .hidden {
+        display: none;
+    }
+    
+    /* Ajout pour gérer les messages d'erreur */
+    .error-message {
+        color: #f44336;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="booking-section">
+    <div class="container">
+        <div class="booking-container">
+            <div class="booking-header">
+                <h2>Réservation de rendez-vous</h2>
+                <p>Complétez les étapes ci-dessous pour planifier votre rendez-vous</p>
+            </div>
+            
+            <div class="booking-steps">
+                <div class="step active" data-step="1">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Informations</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Date & Heure</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Confirmation</div>
+                </div>
+                <div class="step-connector">
+                    <div class="step-connector-progress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <form method="post" id="booking-form">
+                {% csrf_token %}
+                
+                <div class="booking-body">
+                    <!-- Étape 1: Informations personnelles -->
+                    <div class="step-content" data-step-content="1">
+                        <h3>Vos informations personnelles</h3>
+                        <p class="field-info mb-4">Veuillez remplir tous les champs obligatoires (*)</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_full_name" class="required-field">Nom complet</label>
+                                    <input type="text" id="id_full_name" name="full_name" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_email" class="required-field">Email</label>
+                                    <input type="email" id="id_email" name="email" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_phone" class="required-field">Téléphone</label>
+                                    <input type="tel" id="id_phone" name="phone" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_cin" class="required-field">Numéro CIN</label>
+                                    <input type="text" id="id_cin" name="cin_number" class="form-control" required>
+                                    <div class="field-info">Format: X000000</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="id_service" class="required-field">Service</label>
+                            <select id="id_service" name="service" class="form-control" required>
+                                <option value="">Sélectionnez un service</option>
+                                <option value="consultation">Consultation générale</option>
+                                <option value="technique">Support technique</option>
+                                <option value="information">Demande d'informations</option>
+                                <option value="document">Retrait de documents</option>
+                                <option value="autre">Autre</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="id_description">Description (facultatif)</label>
+                            <textarea id="id_description" name="description" class="form-control" rows="3" placeholder="Décrivez brièvement l'objet de votre rendez-vous..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Étape 2: Sélection de date et heure -->
+                    <div class="step-content hidden" data-step-content="2">
+                        <h3>Choix de la date et de l'heure</h3>
+                        <p class="field-info mb-4">Sélectionnez une date disponible puis un créneau horaire</p>
+                        
+                        <div class="form-group">
+                            <label for="id_date" class="required-field">Date</label>
+                            <input type="text" id="id_date" name="date_input" class="form-control flatpickr" placeholder="Choisir une date" required>
+                            <!-- Champ caché pour stocker la date et l'heure complètes -->
+                            <input type="hidden" id="id_datetime" name="date" value="">
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h4>Créneaux disponibles</h4>
+                            <div class="time-slots" id="time-slots">
+                                <div class="loading">
+                                    <div></div>
+                                    <div></div>
+                                </div>
+                                <p class="text-center w-100">Sélectionnez d'abord une date</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Étape 3: Confirmation -->
+                    <div class="step-content hidden" data-step-content="3">
+                        <h3>Confirmez votre rendez-vous</h3>
+                        
+                        <div class="confirmation-details">
+                            <div class="detail-row">
+                                <div class="detail-label">Nom</div>
+                                <div class="detail-value" id="confirm-name"></div>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <div class="detail-label">CIN</div>
+                                <div class="detail-value" id="confirm-cin"></div>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <div class="detail-label">Email</div>
+                                <div class="detail-value" id="confirm-email"></div>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <div class="detail-label">Téléphone</div>
+                                <div class="detail-value" id="confirm-phone"></div>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <div class="detail-label">Service</div>
+                                <div class="detail-value" id="confirm-service"></div>
+                            </div>
+                            
+                            <div class="detail-row">
+                                <div class="detail-label">Date et heure</div>
+                                <div class="detail-value highlight" id="confirm-datetime"></div>
+                            </div>
+                            
+                            <div class="detail-row" id="description-row">
+                                <div class="detail-label">Description</div>
+                                <div class="detail-value" id="confirm-description"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mt-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    J'accepte les conditions générales et la politique de confidentialité
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Message de succès (affiché après soumission) -->
+                    <div class="step-content hidden" data-step-content="success">
+                        <div class="success-animation">
+                            <div class="success-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h3>Réservation confirmée !</h3>
+                            <p>Votre rendez-vous a été enregistré avec succès.</p>
+                            <p>Un email de confirmation vous a été envoyé à <span id="success-email" class="highlight"></span></p>
+                            <div class="mt-4">
+                                <p>Référence: <span id="booking-reference" class="highlight"></span></p>
+                                <p>Date: <span id="booking-date" class="highlight"></span></p>
+                            </div>
+                            <div class="mt-5">
+                                <a href="{% url 'home' %}" class="btn btn-primary">
+                                    <i class="fas fa-home mr-2"></i> Retour à l'accueil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="booking-footer">
+                    <button type="button" class="btn btn-secondary prev-step" style="display: none;">
+                        <i class="fas fa-arrow-left mr-2"></i> Précédent
+                    </button>
+                    
+                    <button type="button" class="btn btn-primary next-step">
+                        Suivant <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                    
+                    <button type="submit" class="btn btn-success submit-btn" style="display: none;">
+                        <i class="fas fa-calendar-check mr-2"></i> Confirmer la réservation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialisation des variables
+        let currentStep = 1;
+        const totalSteps = 3;
+        
+        // Fonction pour générer un ID de réservation aléatoire
+        function generateBookingId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = 'RDV-';
+            for (let i = 0; i < 8; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+        
+        // Configuration du calendrier Flatpickr
+        const datePicker = flatpickr("#id_date", {
+            enableTime: false,
+            dateFormat: "d/m/Y",
+            minDate: "today",
+            locale: "fr",
+            disable: [
+                function(date) {
+                    // Désactiver les dimanches (0) et les samedis (6)
+                    return (date.getDay() === 0 || date.getDay() === 6);
+                }
+            ],
+            onChange: function(selectedDates, dateStr) {
+                // Charger les créneaux disponibles pour cette date
+                loadTimeSlots(selectedDates[0]);
+            }
+        });
+        
+        // Charger les créneaux horaires pour une date donnée
+        function loadTimeSlots(date) {
+            const timeSlots = document.getElementById('time-slots');
+            timeSlots.innerHTML = '<div class="loading"><div></div><div></div></div>';
+            
+            // Formatage de la date pour l'affichage
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            
+            // Simulation de chargement (dans un vrai cas, appel AJAX au serveur)
+            setTimeout(() => {
+                // Créneaux standard avec disponibilités aléatoires
+                const morning = [
+                    { time: '09:00', available: Math.random() > 0.3 },
+                    { time: '09:30', available: Math.random() > 0.3 },
+                    { time: '10:00', available: Math.random() > 0.3 },
+                    { time: '10:30', available: Math.random() > 0.3 },
+                    { time: '11:00', available: Math.random() > 0.3 },
+                    { time: '11:30', available: Math.random() > 0.3 }
+                ];
+                
+                const afternoon = [
+                    { time: '14:00', available: Math.random() > 0.3 },
+                    { time: '14:30', available: Math.random() > 0.3 },
+                    { time: '15:00', available: Math.random() > 0.3 },
+                    { time: '15:30', available: Math.random() > 0.3 },
+                    { time: '16:00', available: Math.random() > 0.3 },
+                    { time: '16:30', available: Math.random() > 0.3 }
+                ];
+                
+                // Génération du HTML des créneaux
+                let html = '<div class="w-100 mb-3"><strong>Matin</strong></div>';
+                
+                morning.forEach(slot => {
+                    const className = slot.available ? 'time-slot-btn' : 'time-slot-btn unavailable';
+                    html += `<button type="button" class="${className}" data-time="${slot.time}" ${!slot.available ? 'disabled' : ''}>
+                        ${slot.time}
+                    </button>`;
+                });
+                
+                html += '<div class="w-100 mt-4 mb-3"><strong>Après-midi</strong></div>';
+                
+                afternoon.forEach(slot => {
+                    const className = slot.available ? 'time-slot-btn' : 'time-slot-btn unavailable';
+                    html += `<button type="button" class="${className}" data-time="${slot.time}" ${!slot.available ? 'disabled' : ''}>
+                        ${slot.time}
+                    </button>`;
+                });
+                
+                timeSlots.innerHTML = html;
+                
+                // Ajout des événements aux boutons de créneaux
+                document.querySelectorAll('.time-slot-btn:not(.unavailable)').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        // Désélectionner tous les boutons
+                        document.querySelectorAll('.time-slot-btn').forEach(b => {
+                            b.classList.remove('active');
+                        });
+                        
+                        // Sélectionner le bouton cliqué
+                        this.classList.add('active');
+                        
+                        // Stocker la date et l'heure complète
+                        const selectedTime = this.getAttribute('data-time');
+                        const formattedDate = `${day}/${month}/${year} ${selectedTime}`;
+                        document.getElementById('id_datetime').value = formattedDate;
+                    });
+                });
+            }, 1000);
+        }
+        
+        // Gestion de la navigation par étapes
+        function updateSteps(step) {
+            // Mise à jour de la progression
+            const progress = ((step - 1) / (totalSteps - 1)) * 100;
+            document.querySelector('.step-connector-progress').style.width = `${progress}%`;
+            
+            // Mise à jour des indicateurs d'étape
+            document.querySelectorAll('.step').forEach(s => {
+                const stepNum = parseInt(s.getAttribute('data-step'));
+                s.classList.remove('active', 'completed');
+                if (stepNum === step) {
+                    s.classList.add('active');
+                } else if (stepNum < step) {
+                    s.classList.add('completed');
+                }
+            });
+            
+            // Afficher le contenu de l'étape actuelle
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelector(`[data-step-content="${step}"]`).classList.remove('hidden');
+            
+            // Mise à jour des boutons de navigation
+            const prevBtn = document.querySelector('.prev-step');
+            const nextBtn = document.querySelector('.next-step');
+            const submitBtn = document.querySelector('.submit-btn');
+            
+            if (step === 1) {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'block';
+                submitBtn.style.display = 'none';
+            } else if (step === totalSteps) {
+                prevBtn.style.display = 'block';
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'block';
+            } else {
+                prevBtn.style.display = 'block';
+                nextBtn.style.display = 'block';
+                submitBtn.style.display = 'none';
+            }
+            
+            // Si nous sommes à l'étape de confirmation, remplir le récapitulatif
+            if (step === 3) {
+                updateConfirmation();
+            }
+            
+            currentStep = step;
+        }
+        
+        // Mettre à jour le récapitulatif
+        function updateConfirmation() {
+            document.getElementById('confirm-name').textContent = document.getElementById('id_full_name').value;
+            document.getElementById('confirm-email').textContent = document.getElementById('id_email').value;
+            document.getElementById('confirm-phone').textContent = document.getElementById('id_phone').value;
+            document.getElementById('confirm-cin').textContent = document.getElementById('id_cin').value;
+            
+            const serviceSelect = document.getElementById('id_service');
+            const selectedService = serviceSelect.options[serviceSelect.selectedIndex].text;
+            document.getElementById('confirm-service').textContent = selectedService;
+            
+            document.getElementById('confirm-datetime').textContent = document.getElementById('id_datetime').value;
+            
+            const description = document.getElementById('id_description').value;
+            if (description) {
+                document.getElementById('confirm-description').textContent = description;
+                document.getElementById('description-row').style.display = 'block';
+            } else {
+                document.getElementById('description-row').style.display = 'none';
+            }
+        }
+        
+        // Validation du formulaire par étape
+        function validateStep(step) {
+            let isValid = true;
+            
+            if (step === 1) {
+                // Validation des champs de l'étape 1
+                const requiredFields = ['id_full_name', 'id_email', 'id_phone', 'id_cin', 'id_service'];
+requiredFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    // Suppression des messages d'erreur existants
+                    const errorMsg = field.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                    
+                    if (!field.value.trim()) {
+                        field.classList.add('error');
+                        const message = document.createElement('div');
+                        message.className = 'error-message';
+                        message.textContent = 'Ce champ est obligatoire';
+                        field.parentNode.appendChild(message);
+                        isValid = false;
+                    } else {
+                        field.classList.remove('error');
+                    }
+                });
+                
+                // Validation du format d'email
+                const emailField = document.getElementById('id_email');
+                if (emailField.value.trim()) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(emailField.value)) {
+                        emailField.classList.add('error');
+                        
+                        // Vérifier si un message d'erreur existe déjà
+                        let errorMsg = emailField.parentNode.querySelector('.error-message');
+                        if (!errorMsg) {
+                            errorMsg = document.createElement('div');
+                            errorMsg.className = 'error-message';
+                            emailField.parentNode.appendChild(errorMsg);
+                        }
+                        
+                        errorMsg.textContent = 'Format d\'email invalide';
+                        isValid = false;
+                    }
+                }
+                
+                // Validation du format CIN (X000000)
+                const cinField = document.getElementById('id_cin');
+                if (cinField.value.trim()) {
+                    const cinRegex = /^[A-Z][0-9]{6}$/;
+                    if (!cinRegex.test(cinField.value)) {
+                        cinField.classList.add('error');
+                        
+                        // Vérifier si un message d'erreur existe déjà
+                        let errorMsg = cinField.parentNode.querySelector('.error-message');
+                        if (!errorMsg) {
+                            errorMsg = document.createElement('div');
+                            errorMsg.className = 'error-message';
+                            cinField.parentNode.appendChild(errorMsg);
+                        }
+                        
+                        errorMsg.textContent = 'Format CIN invalide (exemple: X000000)';
+                        isValid = false;
+                    }
+                }
+                
+                // Validation du format téléphone
+                const phoneField = document.getElementById('id_phone');
+                if (phoneField.value.trim()) {
+                    const phoneRegex = /^[0-9]{10}$/;
+                    if (!phoneRegex.test(phoneField.value)) {
+                        phoneField.classList.add('error');
+                        
+                        // Vérifier si un message d'erreur existe déjà
+                        let errorMsg = phoneField.parentNode.querySelector('.error-message');
+                        if (!errorMsg) {
+                            errorMsg = document.createElement('div');
+                            errorMsg.className = 'error-message';
+                            phoneField.parentNode.appendChild(errorMsg);
+                        }
+                        
+                        errorMsg.textContent = 'Format de téléphone invalide (10 chiffres)';
+                        isValid = false;
+                    }
+                }
+            } 
+            else if (step === 2) {
+                // Vérifier si une date est sélectionnée
+                const dateField = document.getElementById('id_date');
+                if (!dateField.value) {
+                    dateField.classList.add('error');
+                    
+                    // Vérifier si un message d'erreur existe déjà
+                    let errorMsg = dateField.parentNode.querySelector('.error-message');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.className = 'error-message';
+                        dateField.parentNode.appendChild(errorMsg);
+                    }
+                    
+                    errorMsg.textContent = 'Veuillez sélectionner une date';
+                    isValid = false;
+                } else {
+                    dateField.classList.remove('error');
+                    const errorMsg = dateField.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+                
+                // Vérifier si un créneau horaire est sélectionné
+                const timeField = document.getElementById('id_datetime');
+                if (!timeField.value) {
+                    const timeSlots = document.getElementById('time-slots');
+                    
+                    // Vérifier si un message d'erreur existe déjà
+                    let errorMsg = timeSlots.parentNode.querySelector('.error-message');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.className = 'error-message';
+                        timeSlots.parentNode.appendChild(errorMsg);
+                    }
+                    
+                    errorMsg.textContent = 'Veuillez sélectionner un créneau horaire';
+                    isValid = false;
+                } else {
+                    const timeSlots = document.getElementById('time-slots');
+                    const errorMsg = timeSlots.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+            }
+            else if (step === 3) {
+                // Vérifier si les conditions générales sont acceptées
+                const termsCheckbox = document.getElementById('terms');
+                if (!termsCheckbox.checked) {
+                    // Vérifier si un message d'erreur existe déjà
+                    let errorMsg = termsCheckbox.parentNode.parentNode.querySelector('.error-message');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.className = 'error-message';
+                        termsCheckbox.parentNode.parentNode.appendChild(errorMsg);
+                    }
+                    
+                    errorMsg.textContent = 'Vous devez accepter les conditions générales';
+                    isValid = false;
+                } else {
+                    const errorMsg = termsCheckbox.parentNode.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+            }
+            
+            return isValid;
+        }
+        
+        // Événements des boutons de navigation
+        document.querySelector('.next-step').addEventListener('click', function() {
+            if (validateStep(currentStep)) {
+                updateSteps(currentStep + 1);
+            }
+        });
+        
+        document.querySelector('.prev-step').addEventListener('click', function() {
+            updateSteps(currentStep - 1);
+        });
+        
+        // Soumission du formulaire
+        document.getElementById('booking-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (validateStep(currentStep)) {
+                // Simulation de l'envoi (dans un cas réel, envoyer au serveur)
+                const loadingHTML = `
+                    <div class="text-center p-5">
+                        <div class="loading">
+                            <div></div>
+                            <div></div>
+                        </div>
+                        <p>Traitement de votre demande...</p>
+                    </div>
+                `;
+                
+                document.querySelector('.booking-body').innerHTML = loadingHTML;
+                document.querySelector('.booking-footer').style.display = 'none';
+                
+                // Simuler le délai de traitement
+                setTimeout(() => {
+                    // Générer un ID de réservation
+                    const bookingId = generateBookingId();
+                    
+                    // Afficher l'écran de succès
+                    document.querySelectorAll('.step-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    document.querySelector('[data-step-content="success"]').classList.remove('hidden');
+                    
+                    // Remplir les informations de confirmation
+                    document.getElementById('success-email').textContent = document.getElementById('id_email').value;
+                    document.getElementById('booking-reference').textContent = bookingId;
+                    document.getElementById('booking-date').textContent = document.getElementById('id_datetime').value;
+                    
+                    // Mise à jour des étapes
+                    document.querySelectorAll('.step').forEach(s => {
+                        s.classList.remove('active');
+                        s.classList.add('completed');
+                    });
+                    
+                    document.querySelector('.step-connector-progress').style.width = '100%';
+                    
+                    // Dans un vrai cas, envoyer les données au serveur ici
+                    
+                }, 2000);
+            }
+        });
+        
+        // Événements de validation en temps réel
+        const emailField = document.getElementById('id_email');
+        emailField.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(this.value)) {
+                    this.classList.add('error');
+                    
+                    // Vérifier si un message d'erreur existe déjà
+                    let errorMsg = this.parentNode.querySelector('.error-message');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.className = 'error-message';
+                        this.parentNode.appendChild(errorMsg);
+                    }
+                    
+                    errorMsg.textContent = 'Format d\'email invalide';
+                } else {
+                    this.classList.remove('error');
+                    const errorMsg = this.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+            }
+        });
+        
+        const cinField = document.getElementById('id_cin');
+        cinField.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                const cinRegex = /^[A-Z][0-9]{6}$/;
+                if (!cinRegex.test(this.value)) {
+                    this.classList.add('error');
+                    
+                    // Vérifier si un message d'erreur existe déjà
+                    let errorMsg = this.parentNode.querySelector('.error-message');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.className = 'error-message';
+                        this.parentNode.appendChild(errorMsg);
+                    }
+                    
+                    errorMsg.textContent = 'Format CIN invalide (exemple: X000000)';
+                } else {
+                    this.classList.remove('error');
+                    const errorMsg = this.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+            }
+        });
+        
+        const phoneField = document.getElementById('id_phone');
+        phoneField.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                const phoneRegex = /^[0-9]{10}$/;
+                if (!phoneRegex.test(this.value)) {
+                    this.classList.add('error');
+                    
+                    // Vérifier si un message d'erreur existe déjà
+                    let errorMsg = this.parentNode.querySelector('.error-message');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.className = 'error-message';
+                        this.parentNode.appendChild(errorMsg);
+                    }
+                    
+                    errorMsg.textContent = 'Format de téléphone invalide (10 chiffres)';
+                } else {
+                    this.classList.remove('error');
+                    const errorMsg = this.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+            }
+        });
+        
+        // Initialisation de l'interface
+        updateSteps(1);
+    });
+</script>
+{% endblock %}

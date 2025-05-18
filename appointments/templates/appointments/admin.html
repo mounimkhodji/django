@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<style>
+    .admin-panel {
+        max-width: 1000px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 30px;
+        box-shadow: var(--box-shadow);
+    }
+
+    .admin-panel h2 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: var(--dark-color);
+        font-size: 28px;
+    }
+
+    .search-bar {
+        margin-bottom: 20px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: var(--transition);
+    }
+
+    .search-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.1);
+        outline: none;
+    }
+
+    .filters {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .filters button {
+        padding: 10px 15px;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .filters button:hover {
+        background-color: var(--primary-dark);
+    }
+
+    .booking-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .booking-table th, .booking-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+    }
+
+    .booking-table th {
+        background-color: rgba(37, 117, 252, 0.1);
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .booking-table tr:hover {
+        background-color: rgba(37, 117, 252, 0.05);
+    }
+
+    .action-btn {
+        background: var(--danger-color);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .action-btn:hover {
+        background: #d32f2f;
+    }
+
+    .empty-msg {
+        text-align: center;
+        padding: 40px;
+        color: var(--gray-color);
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 30px;
+    }
+
+    .pagination a {
+        padding: 8px 16px;
+        border-radius: 8px;
+        background-color: var(--primary-color);
+        color: white;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .pagination a:hover {
+        background-color: var(--primary-dark);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-panel">
+    <h2><i class="fas fa-user-shield"></i> Panneau d'administration</h2>
+
+    <div class="search-bar">
+        <input class="search-input" type="text" id="search" placeholder="Rechercher par nom ou email...">
+    </div>
+
+    <div class="filters">
+        <button onclick="filterBookings('today')"><i class="fas fa-calendar-day"></i> Aujourd'hui</button>
+        <button onclick="filterBookings('this-week')"><i class="fas fa-calendar-week"></i> Cette semaine</button>
+        <button onclick="filterBookings('this-month')"><i class="fas fa-calendar-alt"></i> Ce mois</button>
+        <button onclick="resetFilters()"><i class="fas fa-sync-alt"></i> Réinitialiser</button>
+    </div>
+
+    {% if bookings %}
+    <table class="booking-table" id="booking-table">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Date</th>
+                <th>Heure</th>
+                <th>Numéro de CIN</th>
+                <th>Service</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr class="booking-row">
+                <td>{{ booking.name }}</td>
+                <td>{{ booking.email }}</td>
+                <td>{{ booking.date|date:"d/m/Y" }}</td>
+                <td>{{ booking.time }}</td>
+                <td>{{ booking.cin }}</td>
+                <td>{{ booking.service }}</td>
+                <td>
+                    <form method="post" action="{% url 'delete_booking' booking.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="action-btn">
+                            <i class="fas fa-trash-alt"></i> Supprimer
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1"><i class="fas fa-angle-double-left"></i></a>
+            <a href="?page={{ page_obj.previous_page_number }}"><i class="fas fa-angle-left"></i></a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <a href="?page={{ num }}" style="background-color: var(--primary-dark);">{{ num }}</a>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}"><i class="fas fa-angle-right"></i></a>
+            <a href="?page={{ page_obj.paginator.num_pages }}"><i class="fas fa-angle-double-right"></i></a>
+        {% endif %}
+    </div>
+    {% else %}
+        <div class="empty-msg">
+            <i class="fas fa-calendar-times fa-2x"></i>
+            <p>Aucune réservation enregistrée.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    // Fonction de recherche en temps réel
+    document.getElementById('search').addEventListener('input', function() {
+        let query = this.value.toLowerCase();
+        let rows = document.querySelectorAll('.booking-row');
+
+        rows.forEach(row => {
+            let name = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+            let email = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            let cin = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+            let service = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+
+            if (name.includes(query) || email.includes(query) || cin.includes(query) || service.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    // Fonction de filtrage
+    function filterBookings(period) {
+        let rows = document.querySelectorAll('.booking-row');
+        let today = new Date();
+        let filteredRows = [];
+
+        rows.forEach(row => {
+            let dateStr = row.querySelector('td:nth-child(3)').textContent;
+            let [day, month, year] = dateStr.split('/');
+            let date = new Date(year, month - 1, day);
+
+            if (period === 'today' && isToday(date, today)) {
+                filteredRows.push(row);
+            }
+            if (period === 'this-week' && isThisWeek(date, today)) {
+                filteredRows.push(row);
+            }
+            if (period === 'this-month' && isThisMonth(date, today)) {
+                filteredRows.push(row);
+            }
+        });
+
+        rows.forEach(row => row.style.display = 'none');
+        filteredRows.forEach(row => row.style.display = '');
+    }
+
+    function resetFilters() {
+        document.querySelectorAll('.booking-row').forEach(row => {
+            row.style.display = '';
+        });
+        document.getElementById('search').value = '';
+    }
+
+    function isToday(date, today) {
+        return date.getDate() === today.getDate() &&
+               date.getMonth() === today.getMonth() &&
+               date.getFullYear() === today.getFullYear();
+    }
+
+    function isThisWeek(date, today) {
+        let startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        let endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        return date >= startOfWeek && date <= endOfWeek;
+    }
+
+    function isThisMonth(date, today) {
+        return date.getMonth() === today.getMonth() && 
+               date.getFullYear() === today.getFullYear();
+    }
+
+    // Tri des colonnes
+    document.querySelectorAll('.booking-table th').forEach((th, index) => {
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', () => {
+            sortTable(index);
+        });
+    });
+
+    function sortTable(columnIndex) {
+        const table = document.querySelector('.booking-table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        rows.sort((a, b) => {
+            const aText = a.querySelector(`td:nth-child(${columnIndex + 1})`).textContent;
+            const bText = b.querySelector(`td:nth-child(${columnIndex + 1})`).textContent;
+            
+            // Essayer de convertir en nombre si possible
+            const aValue = isNaN(aText) ? aText : parseFloat(aText);
+            const bValue = isNaN(bText) ? bText : parseFloat(bText);
+            
+            return aValue > bValue ? 1 : -1;
+        });
+        
+        // Supprimer les lignes existantes
+        rows.forEach(row => tbody.removeChild(row));
+        
+        // Ajouter les lignes triées
+        rows.forEach(row => tbody.appendChild(row));
+    }
+</script>
+{% endblock %}
